@@ -1,5 +1,6 @@
 package taskmanager.taskmanager.controller;
 
+import org.springframework.data.domain.Page;
 import taskmanager.taskmanager.model.Task;
 import taskmanager.taskmanager.service.TaskService;
 import org.springframework.http.HttpStatus;
@@ -55,5 +56,15 @@ public class TaskController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<Task>> getAllTasksPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "id") String sortBy
+    ){
+        Page<Task> tasks = taskService.getAllTasksPaged(page, size, sortBy);
+        return ResponseEntity.ok(tasks);
     }
 }

@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class TaskService{
@@ -26,6 +30,11 @@ public class TaskService{
 
     public Task createTask(Task task){
         return taskRepository.save(task);
+    }
+
+    public Page<Task> getAllTasksPaged(int page, int size, String sortBy){
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+        return taskRepository.findAll(pageable);
     }
 
     public Task updateTask(Long id, Task updatedTask){
