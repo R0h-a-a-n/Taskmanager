@@ -54,4 +54,16 @@ public class TaskService{
         }
         taskRepository.deleteById(id);
     }
+
+    public List<Task> filterTasks(String keyword, Boolean completed){
+        if (keyword != null && completed != null){
+            return taskRepository.findByTitleContainingIgnoreCaseAndCompleted(keyword, completed);
+        }else if(keyword != null){
+            return taskRepository.findByTitleContainingIgnoreCase(keyword);
+        }else if(completed != null){
+            return taskRepository.findByCompleted(completed);
+        }else{
+            return taskRepository.findAll();
+        }
+    }
 }

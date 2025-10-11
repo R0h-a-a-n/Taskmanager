@@ -67,4 +67,13 @@ public class TaskController {
         Page<Task> tasks = taskService.getAllTasksPaged(page, size, sortBy);
         return ResponseEntity.ok(tasks);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Task>> searchTasks(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean completed
+    ){
+        List<Task> results = taskService.filterTasks(keyword, completed);
+        return ResponseEntity.ok(results);
+    }
 }
