@@ -10,10 +10,12 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 
+import taskmanager.taskmanager.dto.TaskRequestDTO;
+import taskmanager.taskmanager.dto.TaskResponseDTO;
+
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
-
     private final TaskService taskService;
 
     public TaskController(TaskService taskService) {
@@ -21,60 +23,30 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
+    public ResponseEntity<List<TaskResponseDTO>> getAllTasks() {
+        return ResponseEntity.ok(taskService.getAllTasks());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
+    public ResponseEntity<TaskResponseDTO> getTaskById(@PathVariable Long id) {
         return taskService.getTaskById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@Valid @RequestBody Task task) {
-        Task created = taskService.createTask(task);
-        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    public ResponseEntity<TaskResponseDTO> createTask(@Valid @RequestBody TaskRequestDTO request) {
+        return new ResponseEntity<>(taskService.createTask(request), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @Valid @RequestBody Task task) {
-        try {
-            Task updated = taskService.updateTask(id, task);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<TaskResponseDTO> updateTask(@PathVariable Long id, @Valid @RequestBody TaskRequestDTO request) {
+        return ResponseEntity.ok(taskService.updateTask(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        try {
-            taskService.deleteTask(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/paged")
-    public ResponseEntity<Page<Task>> getAllTasksPaged(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size,
-            @RequestParam(defaultValue = "id") String sortBy
-    ){
-        Page<Task> tasks = taskService.getAllTasksPaged(page, size, sortBy);
-        return ResponseEntity.ok(tasks);
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<List<Task>> searchTasks(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean completed
-    ){
-        List<Task> results = taskService.filterTasks(keyword, completed);
-        return ResponseEntity.ok(results);
+        taskService.deleteTask(id);
+        return ResponseEntity.noContent().build();
     }
 }

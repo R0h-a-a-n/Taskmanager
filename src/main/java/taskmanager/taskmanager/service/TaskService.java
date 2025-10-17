@@ -11,59 +11,51 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+import taskmanager.taskmanager.dto.TaskRequestDTO;
+import taskmanager.taskmanager.dto.TaskResponseDTO;
 
 @Service
-public class TaskService{
+public class TaskService {
     private final TaskRepository taskRepository;
+    private final ModelMapper modelMapper;
 
-    public TaskService(TaskRepository taskRepository){
+    public TaskService(TaskRepository taskRepository, ModelMapper modelMapper) {
         this.taskRepository = taskRepository;
+        this.modelMapper = modelMapper;
     }
 
-    public List<Task> getAllTasks(){
-        return taskRepository.findAll();
+    public List<TaskResponseDTO> getAllTasks() {
+        return taskRepository.findAll().stream()
+                .map(task -> modelMapper.map(task, TaskResponseDTO.class))
+                .toList();
     }
 
-    public Optional<Task> getTaskById(Long id){
-        return taskRepository.findById(id);
-    }
-
-    public Task createTask(Task task){
-        return taskRepository.save(task);
-    }
-
-    public Page<Task> getAllTasksPaged(int page, int size, String sortBy){
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
-        return taskRepository.findAll(pageable);
-    }
-
-    public Task updateTask(Long id, Task updatedTask){
+    public Optional<TaskResponseDTO> getTaskById(Long id) {
         return taskRepository.findById(id)
-                .map(existingTask -> {
-                    existingTask.setTitle(updatedTask.getTitle());
-                    existingTask.setDescription(updatedTask.getDescription());
-                    existingTask.setCompleted(updatedTask.isCompleted());
-                    return taskRepository.save(existingTask);
+                .map(task -> modelMapper.map(task, TaskResponseDTO.class));
+    }
+
+    public TaskResponseDTO createTask(TaskRequestDTO taskRequest) {
+        Task task = modelMapper.map(taskRequest, Task.class);
+        Task saved = taskRepository.save(task);
+        return modelMapper.map(saved, TaskResponseDTO.class);
+    }
+
+    public TaskResponseDTO updateTask(Long id, TaskRequestDTO taskRequest) {
+        return taskRepository.findById(id)
+                .map(existing -> {
+                    modelMapper.map(taskRequest, existing);
+                    return modelMapper.map(taskRepository.save(existing), TaskResponseDTO.class);
                 })
                 .orElseThrow(() -> new RuntimeException("Task not found with id " + id));
     }
 
-    public void deleteTask(Long id){
-        if (!taskRepository.existsById(id)){
+    public void deleteTask(Long id) {
+        if (!taskRepository.existsById(id)) {
             throw new RuntimeException("Task not found with id " + id);
         }
         taskRepository.deleteById(id);
-    }
-
-    public List<Task> filterTasks(String keyword, Boolean completed){
-        if (keyword != null && completed != null){
-            return taskRepository.findByTitleContainingIgnoreCaseAndCompleted(keyword, completed);
-        }else if(keyword != null){
-            return taskRepository.findByTitleContainingIgnoreCase(keyword);
-        }else if(completed != null){
-            return taskRepository.findByCompleted(completed);
-        }else{
-            return taskRepository.findAll();
-        }
     }
 }
