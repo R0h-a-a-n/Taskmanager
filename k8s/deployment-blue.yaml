@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskmanager-blue
+  labels:
+    app: taskmanager
+    version: blue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: taskmanager
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: taskmanager
+        version: blue
+    spec:
+      containers:
+        - name: taskmanager
+          image: r0haan/taskmanager:blue
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://taskmanager.cktyo00kyour.us-east-1.rds.amazonaws.com:5432/taskmanager"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "rohaan"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
