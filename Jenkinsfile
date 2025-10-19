@@ -35,10 +35,9 @@ pipeline {
         stage('Build & Push Docker Image') {
             steps {
                 script {
+                    def imageTag = "blue"
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        def imageTag = "blue"
-
-                        sh '''
+                        sh """
                             echo "Copying JAR into Docker build context..."
                             cp target/taskmanager-0.0.1-SNAPSHOT.jar .
 
@@ -47,7 +46,7 @@ pipeline {
 
                             echo "Pushing image to Docker Hub..."
                             docker push ${DOCKER_IMAGE}:${imageTag}
-                        '''
+                        """
                     }
                 }
             }
