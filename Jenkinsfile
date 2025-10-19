@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven 3'
         jdk 'Java 17'
+        maven 'Maven 3'
     }
 
     stages {
@@ -12,32 +12,20 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/R0h-a-a-n/Taskmanager.git'
             }
         }
-
         stage('Build') {
             steps {
-                sh './mvnw clean package -DskipTests'
+                sh 'mvn clean package -DskipTests'
             }
         }
-
         stage('Test') {
             steps {
-                sh './mvnw test'
+                sh 'mvn test'
             }
         }
-
-        stage('Run') {
+        stage('Deploy') {
             steps {
-                echo 'Application built successfully.'
+                echo 'Manual deploy step for now (e.g. run JAR locally or copy to EC2 later)'
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed. Check logs.'
         }
     }
 }
