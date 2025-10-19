@@ -37,11 +37,17 @@ pipeline {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
                         def imageTag = "blue"
-                        sh """
+
+                        sh '''
+                            echo "Copying JAR into Docker build context..."
+                            cp target/taskmanager-0.0.1-SNAPSHOT.jar .
+
                             echo "Building Docker image ${DOCKER_IMAGE}:${imageTag}"
                             docker build -t ${DOCKER_IMAGE}:${imageTag} .
+
+                            echo "Pushing image to Docker Hub..."
                             docker push ${DOCKER_IMAGE}:${imageTag}
-                        """
+                        '''
                     }
                 }
             }
@@ -50,14 +56,17 @@ pipeline {
         stage('Verify K8s Connection') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
-                    sh 'kubectl config current-context'
-                    sh 'kubectl get nodes'
+                    sh '''
+                        echo "Verifying Kubernetes connection..."
+                        export KUBECONFIG=$KUBECONFIG
+                        kubectl cluster-info
+                        kubectl get nodes
+                    '''
                 }
             }
         }
 
-
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes - Blue') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
                     sh '''
@@ -65,6 +74,9 @@ pipeline {
                         export KUBECONFIG=$KUBECONFIG
                         kubectl apply -f k8s/service.yaml
                         kubectl apply -f k8s/${BLUE_DEPLOYMENT}
+
+                        echo "Waiting for Blue pods to be ready..."
+                        kubectl rollout status deployment/taskmanager-blue --timeout=120s
                     '''
                 }
             }
@@ -72,15 +84,22 @@ pipeline {
 
         stage('Blue-Green Switch') {
             steps {
-                input message: "Proceed with Green deployment?"
-                withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        export KUBECONFIG=$KUBECONFIG
-                        echo "Deploying Green version..."
-                        kubectl apply -f k8s/${GREEN_DEPLOYMENT}
-                        echo "Switching service traffic from Blue → Green..."
-                        kubectl patch service taskmanager-service -p '{"spec":{"selector":{"app":"taskmanager","version":"green"}}}'
-                    '''
+                script {
+                    input message: "Blue deployment successful. Proceed to deploy Green version?"
+
+                    withCredentials([file(credentialsId: 'kubeconfig-credentials', variable: 'KUBECONFIG')]) {
+                        sh '''
+                            export KUBECONFIG=$KUBECONFIG
+                            echo "Deploying Green version..."
+                            kubectl apply -f k8s/${GREEN_DEPLOYMENT}
+
+                            echo "Waiting for Green pods to be ready..."
+                            kubectl rollout status deployment/taskmanager-green --timeout=120s
+
+                            echo "Switching service traffic from Blue → Green..."
+                            kubectl patch service taskmanager-service -p '{"spec":{"selector":{"app":"taskmanager","version":"green"}}}'
+                        '''
+                    }
                 }
             }
         }
@@ -88,7 +107,7 @@ pipeline {
 
     post {
         success {
-            echo "Blue-Green deployment completed for ${APP_NAME}"
+            echo "Blue-Green deployment completed successfully for ${APP_NAME}"
         }
         failure {
             echo "Pipeline failed for ${APP_NAME}"
