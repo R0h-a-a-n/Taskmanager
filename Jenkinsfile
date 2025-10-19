@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         APP_NAME = 'taskmanager'
-        DOCKER_IMAGE = 'r0haan/taskmanager'
+        DOCKER_IMAGE = 'spoofedbinary/taskmanager'
         BLUE_DEPLOYMENT = 'deployment-blue.yaml'
         GREEN_DEPLOYMENT = 'deployment-green.yaml'
     }
